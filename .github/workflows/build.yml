@@ -1,0 +1,37 @@
+name: Build Game Optimizer APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: 解压源码
+        run: unzip -o GameOptimizer-src.zip
+      - name: 安装 Android SDK
+        run: |
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
+          mkdir -p $ANDROID_HOME
+          unzip -q commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: 编译
+        run: |
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          cd SceneRebuilt
+          ./gradlew assembleDebug --no-daemon
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-optimizer-debug
+          path: SceneRebuilt/app/build/outputs/apk/debug/app-debug.apk
